@@ -10,6 +10,7 @@ class SubscriptionsServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__.'/../config/subscriptions.php' => config_path('subscriptions.php'),
+            'config'
         ]);
 
         $this->loadMigrationsFrom(__DIR__.'/../migrations');
