@@ -1,0 +1,27 @@
+{
+    "name": "romario25/subscriptions",
+    "description": "subscriptions",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Roman Fomin",
+            "email": "fominromm@gmail.com"
+        }
+    ],
+    "require": {
+        "php" : ">=7.1",
+        "guzzlehttp/guzzle": "^6.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Romario25\\Subscriptions\\" : "src/"
+        }
+    },
+    "extra" : {
+        "laravel" : {
+            "providers" : [
+                "Romario25\\Subscriptions\\SubscriptionsServiceProvider"
+            ]
+        }
+    }
+}
