@@ -50,41 +50,44 @@ class SubscriptionsService
     public function saveSubscription($data, $deviceId, $userId = null)
     {
 
-        try {
+        //try {
 
-            DB::beginTransaction();
+       //     DB::beginTransaction();
 
-            $latestReceiptInfo = end($this->sortLatestReceiptInfo($data->latest_receipt_info));
+            $latestReceiptInfo = $this->sortLatestReceiptInfo($data->latest_receipt_info);
+
+            $latestReceiptInfo = end($latestReceiptInfo);
 
             /** @var Subscription $subscription */
             $subscription = Subscription::updateOrCreate(
+                [
+                    'device_id' => $deviceId,
+                    'original_transaction_id' => $data->pending_renewal_info[0]->original_transaction_id
+                ],
                 [
                     'id' => Str::uuid(),
                     'user_id' => $userId,
                     'device_id' => $deviceId,
                     'product_id' => $latestReceiptInfo->product_id,
                     'environment' => $data->environment,
-                    'original_transaction_id' => $data->pending_renewal_info->original_transaction_id,
+                    'original_transaction_id' => $data->pending_renewal_info[0]->original_transaction_id,
                     'type' => $this->defineType($data),
                     'start_date' => $latestReceiptInfo->purchase_date_ms,
                     'end_date' => $latestReceiptInfo->expires_date_ms,
                     'latest_receipt' => $data->latest_receipt
-                ],
-                [
-                    'device_id' => $deviceId,
-                    'original_transaction_id' => $data->pending_renewal_info->original_transaction_id
                 ]
+
             );
 
             $this->saveSubscriptionHistory($subscription, $latestReceiptInfo->transaction_id);
 
-            DB::commit();
+           // DB::commit();
 
             return $subscription;
-        } catch (\Exception $e) {
-
-            DB::rollBack();
-        }
+//        } catch (\Exception $e) {
+//            \Log::error('ERROR SAVE SUBSCRIPTION : ' . $e->getMessage());
+//            DB::rollBack();
+//        }
 
     }
 
@@ -131,9 +134,11 @@ class SubscriptionsService
             return Subscription::TYPE_CANCEL;
         }
 
-        $latestReceiptInfo = end($this->sortLatestReceiptInfo($data->latest_receipt_info));
+        $receiptInfo = $this->sortLatestReceiptInfo($data->latest_receipt_info);
 
-        $countReceiptInfo = count($this->sortLatestReceiptInfo($data->latest_receipt_info));
+        $latestReceiptInfo = end($receiptInfo);
+
+        $countReceiptInfo = count($receiptInfo);
 
         if ($latestReceiptInfo->is_trial_period == true) {
             return Subscription::TYPE_TRIAL;

@@ -21,8 +21,8 @@ class CreateSubscriptionsTable extends Migration
             $table->string('environment');
             $table->string('original_transaction_id');
             $table->string('type');
-            $table->integer('start_date');
-            $table->integer('end_date');
+            $table->bigInteger('start_date');
+            $table->bigInteger('end_date');
             $table->text('latest_receipt');
 
         });

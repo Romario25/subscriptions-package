@@ -19,11 +19,11 @@ class CreateSubscriptionsHistoryTable extends Migration
             $table->string('product_id');
             $table->string('transaction_id');
             $table->string('environment');
-            $table->integer('start_date');
-            $table->integer('end_date');
+            $table->bigInteger('start_date');
+            $table->bigInteger('end_date');
             $table->string('type');
-            $table->integer('count');
-            $table->text('receipt');
+            $table->integer('count')->default(0);
+            $table->text('receipt')->nullable();
 
         });
     }
