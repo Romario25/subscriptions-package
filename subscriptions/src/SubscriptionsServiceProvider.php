@@ -3,6 +3,7 @@ namespace Romario25\Subscriptions;
 
 
 use Illuminate\Support\ServiceProvider;
+use Romario25\Subscriptions\Services\VerifyService;
 
 class SubscriptionsServiceProvider extends ServiceProvider
 {
@@ -23,8 +24,8 @@ class SubscriptionsServiceProvider extends ServiceProvider
             __DIR__.'/../config/subscriptions.php', 'subscriptions'
         );
 
-        $this->app->bind('Subscriptions', function($app){
-            $subscriptions = new SubscriptionsService("test");
+        $this->app->bind(SubscriptionsService::class, function($app){
+            $subscriptions = new SubscriptionsService(new VerifyService());
 
             return $subscriptions;
         });

@@ -3,7 +3,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateSubscriptionsTable extends Migration
+class CreateSubscriptionsHistoryTable extends Migration
 {
     /**
      * Run the migrations.
@@ -12,18 +12,18 @@ class CreateSubscriptionsTable extends Migration
      */
     public function up()
     {
-        Schema::create('subscriptions', function (Blueprint $table) {
+        Schema::create('subscriptions_history', function (Blueprint $table) {
             $table->string('id');
+            $table->string('subscription_id');
             $table->timestamps();
-            $table->integer('user_id')->nullable();
-            $table->string('device_id');
             $table->string('product_id');
+            $table->string('transaction_id');
             $table->string('environment');
-            $table->string('original_transaction_id');
-            $table->string('type');
             $table->integer('start_date');
             $table->integer('end_date');
-            $table->text('latest_receipt');
+            $table->string('type');
+            $table->integer('count');
+            $table->text('receipt');
 
         });
     }
@@ -35,6 +35,6 @@ class CreateSubscriptionsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('subscriptions');
+        Schema::dropIfExists('subscriptions_history');
     }
 }
