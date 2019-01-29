@@ -2,6 +2,7 @@
 namespace Romario25\Subscriptions\Services;
 
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Romario25\Subscriptions\DTO\SubscriptionDto;
 use Romario25\Subscriptions\DTO\SubscriptionHistoryDto;
@@ -14,6 +15,8 @@ class HandlerAppleWebhook
     {
 
         try {
+
+            \DB::beginTransaction();
 
             $latestReceiptInfo = $data['latest_receipt_info'];
 
@@ -36,8 +39,10 @@ class HandlerAppleWebhook
 
             SaveSubscriptionService::saveSubscriptionHistory($subscriptionHistoryDto);
 
+            \DB::commit();
         } catch (\Exception $e) {
-
+            \DB::rollBack();
+            Log::error('ERROR HANDLER APPLE WEBHOOK : ' . $e->getMessage());
         }
 
 

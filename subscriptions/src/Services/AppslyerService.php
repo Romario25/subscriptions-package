@@ -6,7 +6,7 @@ use GuzzleHttp\RequestOptions;
 
 class AppslyerService
 {
-    public function sendStandartEvent($deviceId, $idfa, $appId)
+    public function sendEvent($deviceId, $idfa, $eventName, array $eventValue)
     {
 
         $config = config('subscriptions');
@@ -21,8 +21,8 @@ class AppslyerService
             'eventTime' => date("Y-m-d H:i:s.000", time()),
         );
 
-        $purchase_event['eventName'] = 'af_purchase';
-        $purchase_event['eventValue'] = json_encode([]);
+        $purchase_event['eventName'] = $eventName;
+        $purchase_event['eventValue'] = json_encode($eventValue);
 
         $data_string = json_encode($purchase_event);
 

@@ -16,6 +16,7 @@ class CreateSubscriptionsIDFATable extends Migration
         Schema::create('subscriptions_idfa', function (Blueprint $table) {
             $table->string('device_id');
             $table->string('idfa');
+            $table->timestamps();
         });
     }
 

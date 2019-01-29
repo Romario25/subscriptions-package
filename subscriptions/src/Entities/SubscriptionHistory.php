@@ -16,4 +16,9 @@ class SubscriptionHistory extends \Eloquent
     public $guarded = [];
 
     protected $table = 'subscriptions_history';
+
+    public function subscription()
+    {
+        return $this->belongsTo(Subscription::class, 'subscription_id', 'id');
+    }
 }
