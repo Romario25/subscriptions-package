@@ -6,43 +6,37 @@ use GuzzleHttp\RequestOptions;
 
 class AppslyerService
 {
-    public function sendEvent()
+    public function sendStandartEvent($deviceId, $idfa, $appId)
     {
-        $url = 'https://api2.appsflyer.com/inappevent/';
 
-        $headers = [
-            'authentication' => '',
-            'Host' => '',
-            'Accept' => 'application/json',
-            'Content-Type' => 'application/json'
-        ];
+        $config = config('subscriptions');
 
-        $body = [
-            'appsflyer_id' => '',
-            'customer_user_id' => '',
-            'eventName' => '',
-            'eventValue' => [
-                'af_revenue' => '',
-                'af_content_id' => '',
-                'renewal' => ''
-            ],
-            'eventCurrency' => '',
-            'ip' => '',
-            'eventTime' => '',
-            'af_events_api' => ''
-        ];
 
-        $client = new \GuzzleHttp\Client();
-
-        $response = $client->post($url,
-            [
-                'headers' => $headers,
-                RequestOptions::JSON => $body
-            ]
+        $purchase_event = array(
+            'appsflyer_id' => $deviceId, //device_id
+            'idfa' => $idfa,
+            'bundle_id' => $config['appsflyer']['BUNDLE'],
+            'eventCurrency' => 'USD',
+            'ip' => $deviceId,
+            'eventTime' => date("Y-m-d H:i:s.000", time()),
         );
 
-        $result = $response->getBody()->getContents();
+        $purchase_event['eventName'] = 'af_purchase';
+        $purchase_event['eventValue'] = json_encode([]);
 
+        $data_string = json_encode($purchase_event);
 
+        $ch = curl_init('https://api2.appsflyer.com/inappevent/' . $config['appsflyer']['APP_ID']);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                'Content-Type: application/json',
+                'authentication: ' . $config['appsflyer']['DEV_TOKEN'],
+                'Content-Length: ' . strlen($data_string))
+        );
+
+        $result = curl_exec($ch);
     }
 }
