@@ -7,6 +7,7 @@ use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Str;
 use Romario25\Subscriptions\Entities\Subscription;
 use Romario25\Subscriptions\Entities\SubscriptionHistory;
+use Romario25\Subscriptions\Services\HandlerAppleWebhook;
 use Romario25\Subscriptions\Services\VerifyService;
 
 class SubscriptionsService
@@ -22,7 +23,11 @@ class SubscriptionsService
     }
 
 
+    public function handlerAppleWebhook($data)
+    {
 
+        HandlerAppleWebhook::handler($data);
+    }
 
 
     public function verifyReceipt($receiptToken, $deviceId, $userId)
@@ -140,7 +145,7 @@ class SubscriptionsService
 
         $countReceiptInfo = count($receiptInfo);
 
-        if ($latestReceiptInfo->is_trial_period == true) {
+        if ($latestReceiptInfo->is_trial_period == "true") {
             return Subscription::TYPE_TRIAL;
         }
 
