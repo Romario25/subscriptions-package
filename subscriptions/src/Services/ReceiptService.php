@@ -3,11 +3,9 @@ namespace Romario25\Subscriptions\Services;
 
 
 use GuzzleHttp\RequestOptions;
-use HttpException;
 
-class VerifyService
+class ReceiptService
 {
-
 
     private $config;
 
@@ -15,6 +13,8 @@ class VerifyService
     {
         $this->config = config('subscriptions');
     }
+
+
 
 
     private function getAppleUrl() : string
@@ -27,26 +27,7 @@ class VerifyService
     }
 
 
-    public function verifyReceipt($receipt)
-    {
-
-        if ($receipt['status'] != 200) {
-            throw new \Exception('ERROR RESPONSE TO APPLE');
-        }
-
-        $responseBody = json_decode($receipt['body']);
-
-        $status = $responseBody->status;
-
-        if ($status != 0) {
-            throw new \Exception('ERROR RESPONSE TO APPLE STATUS');
-        }
-
-        return $responseBody;
-
-    }
-
-    private function sendReceipt($receiptData)
+    public function sendReceipt($receiptData)
     {
         $client = new \GuzzleHttp\Client();
 
@@ -66,13 +47,4 @@ class VerifyService
             'body' => $response->getBody()->getContents()
         ];
     }
-
-    private function sortInApp($inApp) : array
-    {
-        $collect = collect($inApp);
-
-        return $collect->sortBy('purchase_date_ms')->toArray();
-    }
-
-
 }

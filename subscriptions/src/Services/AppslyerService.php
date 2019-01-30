@@ -2,41 +2,65 @@
 namespace Romario25\Subscriptions\Services;
 
 
+use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
 
 class AppslyerService
 {
-    public function sendEvent($deviceId, $idfa, $eventName, array $eventValue)
+    
+    public static function sendEvent($eventName, $idfa, $deviceId, $price, $currency = 'USD')
     {
 
         $config = config('subscriptions');
 
-
-        $purchase_event = array(
-            'appsflyer_id' => $deviceId, //device_id
-            'idfa' => $idfa,
+        $body = [
+            'appsflyer_id' => $config['appsflyer']['APP_ID'],
+            'eventName' => $eventName,
+            'af_events_api' => "true",
             'bundle_id' => $config['appsflyer']['BUNDLE'],
-            'eventCurrency' => 'USD',
-            'ip' => $deviceId,
-            'eventTime' => date("Y-m-d H:i:s.000", time()),
-        );
+            'eventCurrency' => $currency,
+            'customer_user_id' => $deviceId
+        ];
 
-        $purchase_event['eventName'] = $eventName;
-        $purchase_event['eventValue'] = json_encode($eventValue);
+        if (!is_null($idfa)) {
+            $body['idfa'] = $idfa;
+        }
 
-        $data_string = json_encode($purchase_event);
+        $eventValue = [
+            'af_revenue' => (string) $price
+        ];
 
-        $ch = curl_init('https://api2.appsflyer.com/inappevent/' . $config['appsflyer']['APP_ID']);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($ch, CURLOPT_HEADER, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-                'Content-Type: application/json',
-                'authentication: ' . $config['appsflyer']['DEV_TOKEN'],
-                'Content-Length: ' . strlen($data_string))
-        );
+        $body['eventValue'] = json_encode($eventValue);
 
-        $result = curl_exec($ch);
+
+        $client = new Client([
+            'timeout'  => 30.0,
+        ]);
+
+        try {
+            $response = $client->request('POST', 'https://api2.appsflyer.com/inappevent/id' . $config['appsflyer']['APP_ID'], [
+                RequestOptions::JSON => $body,
+                'headers' => [
+                    'authentication' => $config['appsflyer']['DEV_TOKEN'],
+                ]
+            ]);
+
+            $body = $response->getBody();
+
+            dump($response->getStatusCode());
+            dump($body->getContents());
+
+            $phrase = $response->getReasonPhrase();
+
+            if ($phrase != 'OK') {
+                \Log::error('Bad response from apps flyer analytics:'.PHP_EOL.$response->getBody());
+                return;
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('SEND EVENT APPSFLYER : :'. $e->getMessage());
+            return;
+        }
     }
+
 }

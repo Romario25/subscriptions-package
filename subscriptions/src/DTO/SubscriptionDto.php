@@ -4,8 +4,6 @@ namespace Romario25\Subscriptions\DTO;
 
 class SubscriptionDto
 {
-    public $id;
-
     public $deviceId;
 
     public $originalTransactionId;
@@ -24,7 +22,6 @@ class SubscriptionDto
 
     /**
      * SubscriptionDto constructor.
-     * @param $id
      * @param $deviceId
      * @param $originalTransactionId
      * @param $productId
@@ -34,9 +31,8 @@ class SubscriptionDto
      * @param $endDate
      * @param $latestReceipt
      */
-    public function __construct($id, $deviceId, $originalTransactionId, $productId, $environment, $type, $startDate, $endDate, $latestReceipt)
+    public function __construct($deviceId, $originalTransactionId, $productId, $environment, $type, $startDate, $endDate, $latestReceipt)
     {
-        $this->id = $id;
         $this->deviceId = $deviceId;
         $this->originalTransactionId = $originalTransactionId;
         $this->productId = $productId;

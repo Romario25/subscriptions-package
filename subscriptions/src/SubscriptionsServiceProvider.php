@@ -3,6 +3,7 @@ namespace Romario25\Subscriptions;
 
 
 use Illuminate\Support\ServiceProvider;
+use Romario25\Subscriptions\Services\ReceiptService;
 use Romario25\Subscriptions\Services\VerifyService;
 
 class SubscriptionsServiceProvider extends ServiceProvider
@@ -25,7 +26,7 @@ class SubscriptionsServiceProvider extends ServiceProvider
         );
 
         $this->app->bind(SubscriptionsService::class, function($app){
-            $subscriptions = new SubscriptionsService(new VerifyService());
+            $subscriptions = new SubscriptionsService(new ReceiptService(), new VerifyService());
 
             return $subscriptions;
         });

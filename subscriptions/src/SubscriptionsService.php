@@ -5,9 +5,13 @@ namespace Romario25\Subscriptions;
 use DB;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Str;
+use Romario25\Subscriptions\DTO\SubscriptionDto;
 use Romario25\Subscriptions\Entities\Subscription;
 use Romario25\Subscriptions\Entities\SubscriptionHistory;
+use Romario25\Subscriptions\Services\AppslyerService;
 use Romario25\Subscriptions\Services\HandlerAppleWebhook;
+use Romario25\Subscriptions\Services\ReceiptService;
+use Romario25\Subscriptions\Services\SaveSubscriptionService;
 use Romario25\Subscriptions\Services\VerifyService;
 
 class SubscriptionsService
@@ -15,11 +19,13 @@ class SubscriptionsService
 
     private $config;
     private $verifyService;
+    private $receiptService;
 
-    public function __construct(VerifyService $verifyService)
+    public function __construct(ReceiptService $receiptService, VerifyService $verifyService)
     {
         $this->config = config('subscriptions');
         $this->verifyService = $verifyService;
+        $this->receiptService = $receiptService;
     }
 
 
@@ -29,15 +35,50 @@ class SubscriptionsService
         HandlerAppleWebhook::handler($data);
     }
 
+    public function handlerReceipt($deviceId, $environment, $latestReceipt, $latestReceiptInfo, $pendingRenewalInfo)
+    {
 
-    public function verifyReceipt($receiptToken, $deviceId, $userId)
+        $endLatestReceiptInfo = end($latestReceiptInfo);
+
+        $subscriptionDTO = new SubscriptionDto(
+            $deviceId,
+            $endLatestReceiptInfo->original_transaction_id,
+            $endLatestReceiptInfo->product_id,
+            $environment,
+            $this->defineType($pendingRenewalInfo, $latestReceiptInfo),
+            $endLatestReceiptInfo->purchase_date_ms,
+            $endLatestReceiptInfo->expires_date_ms,
+            $latestReceipt
+        );
+
+        $subscription = SaveSubscriptionService::saveSubscription($subscriptionDTO);
+
+        SaveSubscriptionService::checkReceiptHistory($latestReceiptInfo, $subscription);
+
+        $event = $this->getEventBySubscription($subscription);
+
+
+        AppslyerService::sendEvent(
+            $event,
+            '2DD5392C-ACA8-40C1-A309-2875582C3567',
+            $deviceId,
+            0);
+
+    }
+
+    public function getResponseAppleReceipt($latestReceipt)
+    {
+        return $this->receiptService->sendReceipt($latestReceipt);
+    }
+
+
+
+
+    public function verifyReceipt($receiptToken)
     {
         try {
+
             $verifyData = $this->verifyService->verifyReceipt($receiptToken);
-
-            // save or update subscription
-            $subscription = $this->saveSubscription($verifyData, $deviceId, $userId);
-
 
             return [
                 'status' => 'OK'
@@ -52,78 +93,7 @@ class SubscriptionsService
 
     }
 
-    public function saveSubscription($data, $deviceId, $userId = null)
-    {
 
-        //try {
-
-       //     DB::beginTransaction();
-
-            $latestReceiptInfo = $this->sortLatestReceiptInfo($data->latest_receipt_info);
-
-            $latestReceiptInfo = end($latestReceiptInfo);
-
-            /** @var Subscription $subscription */
-            $subscription = Subscription::updateOrCreate(
-                [
-                    'device_id' => $deviceId,
-                    'original_transaction_id' => $data->pending_renewal_info[0]->original_transaction_id
-                ],
-                [
-                    'id' => Str::uuid(),
-                    'user_id' => $userId,
-                    'device_id' => $deviceId,
-                    'product_id' => $latestReceiptInfo->product_id,
-                    'environment' => $data->environment,
-                    'original_transaction_id' => $data->pending_renewal_info[0]->original_transaction_id,
-                    'type' => $this->defineType($data),
-                    'start_date' => $latestReceiptInfo->purchase_date_ms,
-                    'end_date' => $latestReceiptInfo->expires_date_ms,
-                    'latest_receipt' => $data->latest_receipt
-                ]
-
-            );
-
-            $this->saveSubscriptionHistory($subscription, $latestReceiptInfo->transaction_id);
-
-           // DB::commit();
-
-            return $subscription;
-//        } catch (\Exception $e) {
-//            \Log::error('ERROR SAVE SUBSCRIPTION : ' . $e->getMessage());
-//            DB::rollBack();
-//        }
-
-    }
-
-
-    public function saveSubscriptionHistory(Subscription $subscription, $transactionId)
-    {
-        $subscriptionHistory = SubscriptionHistory::where('transaction_id', $transactionId)->first();
-
-        if (is_null($subscriptionHistory)) {
-            $subscriptionHistory = SubscriptionHistory::create([
-                'id' => Str::uuid(),
-                'subscription_id' => $subscription->id,
-                'product_id' => $subscription->product_id,
-                'environment' => $subscription->environment,
-                'start_date' => $subscription->start_date,
-                'end_date' => $subscription->end_date,
-                'type' => $subscription->type,
-                'transaction_id' => $transactionId
-            ]);
-
-            $count = SubscriptionHistory::where('product_id', $subscription->product_id)
-                ->where('subscription_id', $subscription->id)->count();
-
-            SubscriptionHistory::where('id', $subscriptionHistory->id)
-                ->update([
-                    'count' => $count
-                ]);
-
-
-        }
-    }
 
 
     private function sortLatestReceiptInfo($latestReceiptInfo) : array
@@ -133,13 +103,13 @@ class SubscriptionsService
         return $collect->sortBy('purchase_date_ms')->toArray();
     }
 
-    private function defineType($data)
+    private function defineType($pendingRenewalInfo, $latestReceiptInfo)
     {
-        if (isset($data->pending_renewal_info) && $data->pending_renewal_info == 1 ) {
+        if ($pendingRenewalInfo->expiration_intent == 1 ) {
             return Subscription::TYPE_CANCEL;
         }
 
-        $receiptInfo = $this->sortLatestReceiptInfo($data->latest_receipt_info);
+        $receiptInfo = $this->sortLatestReceiptInfo($latestReceiptInfo);
 
         $latestReceiptInfo = end($receiptInfo);
 
@@ -149,11 +119,47 @@ class SubscriptionsService
             return Subscription::TYPE_TRIAL;
         }
 
-        if ($countReceiptInfo == 2 && !isset($data->pending_renewal_info)) {
+        if ($countReceiptInfo == 2 && !isset($pendingRenewalInfo->expiration_intent)) {
             return Subscription::TYPE_INITIAL_BUY;
         }
 
         return Subscription::TYPE_RENEWAL;
+    }
+
+    public function getEventBySubscription(Subscription $subscription)
+    {
+        $config = config('subscriptions');
+
+        $eventDuration = $config['events_duration'];
+
+        $subscriptionType = $subscription->type;
+
+        $prefix = 'test_';
+
+        $event = '';
+
+        $key = array_search($subscription->product_id, $eventDuration);
+
+        switch ($subscriptionType) {
+            case Subscription::TYPE_TRIAL:
+                $event =  $prefix . 'start_trial';
+            break;
+            case Subscription::TYPE_INITIAL_BUY:
+                $event = $prefix . $key . '_1';
+            break;
+            case Subscription::TYPE_RENEWAL:
+                $count = SubscriptionHistory::where('subscription_id')
+                    ->where('type', Subscription::TYPE_RENEWAL)->count();
+                $event = $prefix . $key . '_' . $count;
+            break;
+            case Subscription::TYPE_CANCEL:
+                $count = SubscriptionHistory::where('subscription_id')
+                    ->where('type', Subscription::TYPE_RENEWAL)->count();
+                $event = $prefix . 'cancel_' . $key . '_' . $count;
+            break;
+        }
+
+        return $event;
     }
 
 
