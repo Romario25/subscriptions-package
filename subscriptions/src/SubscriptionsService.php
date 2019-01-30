@@ -53,7 +53,16 @@ class SubscriptionsService
 
         $subscription = SaveSubscriptionService::saveSubscription($subscriptionDTO);
 
-        SaveSubscriptionService::checkReceiptHistory($latestReceiptInfo, $subscription);
+        $diffTransaction = SaveSubscriptionService::checkReceiptHistory($latestReceiptInfo, $subscription);
+
+        foreach ($diffTransaction as $transaction) {
+            AppslyerService::sendEvent(
+                Subscription::TYPE_RENEWAL,
+                '2DD5392C-ACA8-40C1-A309-2875582C3567',
+                $deviceId,
+                0);
+        }
+
 
         $event = $this->getEventBySubscription($subscription);
 

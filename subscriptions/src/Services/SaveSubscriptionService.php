@@ -87,7 +87,8 @@ class SaveSubscriptionService
 
     public static function checkReceiptHistory(array $latestReceiptInfo, $subscription)
     {
-        $collect = collect($latestReceiptInfo)->keyBy('transaction_id')->toArray();
+        $collect = collect($latestReceiptInfo)
+            ->keyBy('transaction_id')->toArray();
 
 
 
@@ -117,10 +118,13 @@ class SaveSubscriptionService
 
                 SaveSubscriptionService::saveSubscriptionHistory($subscriptionHistoryDTO);
             }
+
+            return collect($latestReceiptInfo)
+                ->whereIn('transaction_id', $arrayDiffTransactionId)->toArray();
         }
 
 
-
+        return null;
 
 
     }
