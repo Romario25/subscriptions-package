@@ -105,7 +105,7 @@ class SubscriptionsService
 
     private function defineType($pendingRenewalInfo, $latestReceiptInfo)
     {
-        if ($pendingRenewalInfo->expiration_intent == 1 ) {
+        if (isset($pendingRenewalInfo->expiration_intent) && $pendingRenewalInfo->expiration_intent == 1 ) {
             return Subscription::TYPE_CANCEL;
         }
 
