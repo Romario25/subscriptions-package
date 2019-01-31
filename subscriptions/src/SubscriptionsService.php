@@ -2,6 +2,7 @@
 namespace Romario25\Subscriptions;
 
 
+use Carbon\Carbon;
 use DB;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Support\Str;
@@ -55,23 +56,23 @@ class SubscriptionsService
 
         $diffTransaction = SaveSubscriptionService::checkReceiptHistory($latestReceiptInfo, $subscription);
 
-        foreach ($diffTransaction as $transaction) {
-            AppslyerService::sendEvent(
-                Subscription::TYPE_RENEWAL,
-                '2DD5392C-ACA8-40C1-A309-2875582C3567',
-                $deviceId,
-                0);
-        }
-
-
-        $event = $this->getEventBySubscription($subscription);
-
-
-        AppslyerService::sendEvent(
-            $event,
-            '2DD5392C-ACA8-40C1-A309-2875582C3567',
-            $deviceId,
-            0);
+//        foreach ($diffTransaction as $transaction) {
+//            AppslyerService::sendEvent(
+//                Subscription::TYPE_RENEWAL,
+//                '2DD5392C-ACA8-40C1-A309-2875582C3567',
+//                $deviceId,
+//                0);
+//        }
+//
+//
+//        $event = $this->getEventBySubscription($subscription);
+//
+//
+//        AppslyerService::sendEvent(
+//            $event,
+//            '2DD5392C-ACA8-40C1-A309-2875582C3567',
+//            $deviceId,
+//            0);
 
     }
 
@@ -169,6 +170,33 @@ class SubscriptionsService
         }
 
         return $event;
+    }
+
+    public function checkSubscription()
+    {
+        $now = Carbon::now()->timestamp;
+
+        $subscriptions = Subscription::where('end_date', '<', $now * 1000)
+            ->where('type', Subscription::TYPE_RENEWAL)
+            ->orWhere('type', Subscription::TYPE_INITIAL_BUY)->get();
+        dd($subscriptions);
+        foreach ($subscriptions as $subscription) {
+            $responseByApple = $this->getResponseAppleReceipt($subscription->latest_receipt);
+
+            $responseByAppleBody = json_decode($responseByApple['body']);
+
+
+
+            $environment = $responseByAppleBody->environment;
+
+            $this->handlerReceipt(
+                $subscription->device_id,
+                $environment,
+                $responseByAppleBody->latest_receipt,
+                $responseByAppleBody->latest_receipt_info,
+                $responseByAppleBody->pending_renewal_info[0]
+            );
+        }
     }
 
 

@@ -19,7 +19,8 @@ class AppslyerService
             'af_events_api' => "true",
             'bundle_id' => $config['appsflyer']['BUNDLE'],
             'eventCurrency' => $currency,
-            'customer_user_id' => $deviceId
+            'customer_user_id' => $deviceId,
+            'device_id' => $deviceId
         ];
 
         if (!is_null($idfa)) {
