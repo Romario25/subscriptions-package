@@ -1,6 +1,7 @@
 <?php
 namespace Romario25\Subscriptions\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Romario25\Subscriptions\DTO\SubscriptionDto;
 use Romario25\Subscriptions\DTO\SubscriptionHistoryDto;
@@ -71,7 +72,8 @@ class SaveSubscriptionService
                 'start_date' => $subscriptionHistoryDto->startDate,
                 'end_date' => $subscriptionHistoryDto->endDate,
                 'type' => $subscriptionHistoryDto->type,
-                'transaction_id' => $subscriptionHistoryDto->transactionId
+                'transaction_id' => $subscriptionHistoryDto->transactionId,
+                'count' => $subscriptionHistoryDto->count
             ]);
 
             $count = SubscriptionHistory::where('product_id', $subscriptionHistoryDto->productId)
@@ -113,7 +115,8 @@ class SaveSubscriptionService
                     $subscription->environment,
                     $collect[$transactionId]->purchase_date_ms,
                     $collect[$transactionId]->expires_date_ms,
-                    ($collect[$transactionId]->is_trial_period == "true") ? Subscription::TYPE_TRIAL : Subscription::TYPE_RENEWAL
+                    ($collect[$transactionId]->is_trial_period == "true") ? Subscription::TYPE_TRIAL : Subscription::TYPE_RENEWAL,
+                    0
                 );
 
                 SaveSubscriptionService::saveSubscriptionHistory($subscriptionHistoryDTO);
@@ -127,5 +130,26 @@ class SaveSubscriptionService
         return null;
 
 
+    }
+
+
+    public static function createCancelReceiptHistory($subscription)
+    {
+
+        $latestRecordSubscriptionHistory = SubscriptionHistory::where('subscription_id', $subscription->id)
+            ->orderBy('created_at', 'DESC')->limit(1)->first();
+
+
+        $subscriptionHistoryDTO = new SubscriptionHistoryDto(
+            $subscription->id,
+            $latestRecordSubscriptionHistory->transaction_id,
+            $latestRecordSubscriptionHistory->product_id,
+            $subscription->environment,
+            Carbon::now()->timestamp * 1000,
+            Carbon::now()->timestamp * 1000,
+            Subscription::TYPE_CANCEL
+        );
+
+        SaveSubscriptionService::saveSubscriptionHistory($subscriptionHistoryDTO);
     }
 }

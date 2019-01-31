@@ -3,7 +3,7 @@ namespace Romario25\Subscriptions\DTO;
 
 
 use Illuminate\Support\Str;
-use Romario25\Subscriptions\Entities\Subscription;
+
 
 
 /**
@@ -30,6 +30,8 @@ class SubscriptionHistoryDto
 
     public $type;
 
+    public $count;
+
     /**
      * SubscriptionHistoryDto constructor.
      * @param $id
@@ -41,7 +43,7 @@ class SubscriptionHistoryDto
      * @param $endDate
      * @param $type
      */
-    public function __construct($subscriptionId, $transactionId, $productId, $environment, $startDate, $endDate, $type)
+    public function __construct($subscriptionId, $transactionId, $productId, $environment, $startDate, $endDate, $type, $count)
     {
         $this->id = Str::uuid();
         $this->subscriptionId = $subscriptionId;
@@ -51,6 +53,8 @@ class SubscriptionHistoryDto
         $this->startDate = $startDate;
         $this->endDate = $endDate;
         $this->type = $type;
+        $this->count = $count;
+
     }
 
 

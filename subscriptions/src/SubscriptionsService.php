@@ -59,6 +59,29 @@ class SubscriptionsService
 
         $diffTransaction = SaveSubscriptionService::checkReceiptHistory($latestReceiptInfo, $subscription);
 
+        if (count($diffTransaction) == 1) {
+            AppslyerService::sendEvent(
+                Subscription::TYPE_RENEWAL,
+                '2DD5392C-ACA8-40C1-A309-2875582C3567',
+                $deviceId,
+                0);
+        } else {
+            foreach ($diffTransaction as $transaction) {
+                $transactionHistory = SubscriptionHistory::where('transaction_id', $transaction)
+                    ->first();
+
+
+
+                AppslyerService::sendEvent(
+                    Subscription::TYPE_RENEWAL,
+                    '2DD5392C-ACA8-40C1-A309-2875582C3567',
+                    $deviceId,
+                    0);
+
+            }
+        }
+
+
 //        foreach ($diffTransaction as $transaction) {
 //            AppslyerService::sendEvent(
 //                Subscription::TYPE_RENEWAL,
@@ -66,16 +89,19 @@ class SubscriptionsService
 //                $deviceId,
 //                0);
 //        }
-//
-//
-//        $event = $this->getEventBySubscription($subscription);
-//
-//
-//        AppslyerService::sendEvent(
-//            $event,
-//            '2DD5392C-ACA8-40C1-A309-2875582C3567',
-//            $deviceId,
-//            0);
+
+
+        if ($type == Subscription::TYPE_CANCEL) {
+            SaveSubscriptionService::createCancelReceiptHistory($subscription);
+
+            $event = $this->getEventBySubscription($subscription);
+
+            AppslyerService::sendEvent(
+                $event,
+                '2DD5392C-ACA8-40C1-A309-2875582C3567',
+                $deviceId,
+                0);
+        }
 
     }
 
