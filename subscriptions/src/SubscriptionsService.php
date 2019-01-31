@@ -181,6 +181,9 @@ class SubscriptionsService
             ->orWhere('type', Subscription::TYPE_INITIAL_BUY)->get();
         //dd($subscriptions);
         foreach ($subscriptions as $subscription) {
+
+            \Log::info('SUBCRIPTION ID : ' . $subscription->id);
+
             $responseByApple = $this->getResponseAppleReceipt($subscription->latest_receipt);
 
             $responseByAppleBody = json_decode($responseByApple['body']);
