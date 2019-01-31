@@ -61,7 +61,7 @@ class SubscriptionsService
 
         if (count($diffTransaction) == 1) {
             AppslyerService::sendEvent(
-                Subscription::TYPE_RENEWAL,
+                $this->getEventBySubscription($subscription),
                 '2DD5392C-ACA8-40C1-A309-2875582C3567',
                 $deviceId,
                 0);
@@ -73,22 +73,13 @@ class SubscriptionsService
 
 
                 AppslyerService::sendEvent(
-                    Subscription::TYPE_RENEWAL,
+                    $this->getEventBySubscription($transactionHistory),
                     '2DD5392C-ACA8-40C1-A309-2875582C3567',
                     $deviceId,
                     0);
 
             }
         }
-
-
-//        foreach ($diffTransaction as $transaction) {
-//            AppslyerService::sendEvent(
-//                Subscription::TYPE_RENEWAL,
-//                '2DD5392C-ACA8-40C1-A309-2875582C3567',
-//                $deviceId,
-//                0);
-//        }
 
 
         if ($type == Subscription::TYPE_CANCEL) {
@@ -172,7 +163,7 @@ class SubscriptionsService
         return Subscription::TYPE_RENEWAL;
     }
 
-    public function getEventBySubscription(Subscription $subscription)
+    public function getEventBySubscription($subscription)
     {
         $config = config('subscriptions');
 
