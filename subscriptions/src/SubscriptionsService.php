@@ -41,12 +41,15 @@ class SubscriptionsService
 
         $endLatestReceiptInfo = end($latestReceiptInfo);
 
+        $type = $this->defineType($pendingRenewalInfo, $latestReceiptInfo);
+
+
         $subscriptionDTO = new SubscriptionDto(
             $deviceId,
             $endLatestReceiptInfo->original_transaction_id,
             $endLatestReceiptInfo->product_id,
             $environment,
-            $this->defineType($pendingRenewalInfo, $latestReceiptInfo),
+            $type,
             $endLatestReceiptInfo->purchase_date_ms,
             $endLatestReceiptInfo->expires_date_ms,
             $latestReceipt
@@ -121,16 +124,23 @@ class SubscriptionsService
 
         $receiptInfo = $this->sortLatestReceiptInfo($latestReceiptInfo);
 
-        $latestReceiptInfo = end($receiptInfo);
+        $endReceiptInfo = end($receiptInfo);
 
         $countReceiptInfo = count($receiptInfo);
 
-        if ($latestReceiptInfo->is_trial_period == "true") {
+        if ($endReceiptInfo->is_trial_period == "true") {
             return Subscription::TYPE_TRIAL;
         }
 
-        if ($countReceiptInfo == 2 && !isset($pendingRenewalInfo->expiration_intent)) {
+        if ($countReceiptInfo == 1 && $endReceiptInfo->is_trial_period == "false") {
             return Subscription::TYPE_INITIAL_BUY;
+        }
+
+        if ($countReceiptInfo == 2  && !isset($pendingRenewalInfo->expiration_intent)) {
+
+            if ($receiptInfo[0]->is_trial_period == "true") {
+                return Subscription::TYPE_INITIAL_BUY;
+            }
         }
 
         return Subscription::TYPE_RENEWAL;
@@ -175,7 +185,7 @@ class SubscriptionsService
     public function checkSubscription()
     {
         $now = Carbon::now()->timestamp;
-        \Log::info('NOW : ' . $now);
+      //  \Log::info('NOW : ' . $now);
         $subscriptions = Subscription::where('end_date', '<', $now * 1000)
             ->where('type', Subscription::TYPE_RENEWAL)
             ->orWhere('type', Subscription::TYPE_INITIAL_BUY)->get();
