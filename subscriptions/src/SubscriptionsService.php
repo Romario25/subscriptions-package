@@ -175,7 +175,7 @@ class SubscriptionsService
     public function checkSubscription()
     {
         $now = Carbon::now()->timestamp;
-
+        \Log::info('NOW : ' . $now);
         $subscriptions = Subscription::where('end_date', '<', $now * 1000)
             ->where('type', Subscription::TYPE_RENEWAL)
             ->orWhere('type', Subscription::TYPE_INITIAL_BUY)->get();
